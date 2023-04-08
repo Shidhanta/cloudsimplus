@@ -381,10 +381,10 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
         System.out.println("[IN] : DRRHA > moveNextCloudletsFromWaitingToExecList");
         final List<CloudletExecution> finishedCloudlets = cloudletsFinished();
 
-
+        final List<CloudletExecution> rerunCloudlet = cloudletsThatNeedToBeReRun();
 
         final List<CloudletExecution> preemptedCloudlets = preemptExecCloudletsWithExpiredVRuntimeAndMoveToWaitingList();
-        //final List<CloudletExecution> reRunCloudlets = cloudletsThatNeedToBeReRun();
+
 
         final double nextCloudletFinishTime = super.moveNextCloudletsFromWaitingToExecList(currentTime);
 
@@ -416,6 +416,31 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
         return nextCloudletFinishTime;
     }
 
+    /**
+     *Checks which Cloudlets in the execution list have an expired virtual
+     * runtime (that have reached the execution time slic) but fits the condition to be re run.
+     * @return The list of preempted Cloudlets, that
+     * must have their virtual runtime (VRT) reset after the next cloudlets are put into
+     * the execution list
+     */
+    private List<CloudletExecution> cloudletsThatNeedToBeReRun(){
+        System.out.println("[IN] : DRRHA > cloudletsThatNeedToBeReRun ");
+        final Predicate<CloudletExecution> reRunCloudletLogic = cle -> cle.getVirtualRuntime() >= cle.getTimeSlice() && checkCondition(cle);
+        final List<CloudletExecution> reRunCloudlets =
+            getCloudletExecList()
+                .stream()
+                .filter(reRunCloudletLogic)
+                .collect(Collectors.toList());
+
+        for(CloudletExecution c: reRunCloudlets){
+            c.setVirtualRuntime(computeCloudletInitialVirtualRuntime(c));
+            c.setTimeSlice(computeCloudletTimeSlice(c));
+            System.out.println("[IN] : DRRHA > cloudletsThatNeedToBeReRun : "+c.getCloudletId()+" will be run again");
+        }
+
+        return reRunCloudlets;
+    }
+
 
     /**
      * Checks which Cloudlets in the execution list have an expired virtual
@@ -430,7 +455,7 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
      */
     private List<CloudletExecution> preemptExecCloudletsWithExpiredVRuntimeAndMoveToWaitingList() {
         System.out.println("[IN] : DRRHA > preemptExecCloudletsWithExpiredVRuntimeAndMoveToWaitingList");
-        final Predicate<CloudletExecution> vrtReachedTimeSlice = cle -> cle.getVirtualRuntime() >= cle.getTimeSlice() || checkCondition(cle) ;
+        final Predicate<CloudletExecution> vrtReachedTimeSlice = cle -> cle.getVirtualRuntime() >= cle.getTimeSlice();
         final List<CloudletExecution> expiredVrtCloudlets =
             getCloudletExecList()
                 .stream()
@@ -444,9 +469,6 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
             System.out.println("[IN]: DRRHA >  preemptExecCloudletsWithExpiredVRuntimeAndMoveToWaitingList : preempted cloudlets"+ c.getCloudletId());
         }
 
-        for(final CloudletExecution c: getCloudletFinishedList()){
-            System.out.println("[IN]: DRRHA >  preemptExecCloudletsWithExpiredVRuntimeAndMoveToWaitingList : finished cloudlets"+ c.getCloudletId());
-        }
         expiredVrtCloudlets.forEach(cle -> addCloudletToWaitingList(removeCloudletFromExecList(cle)));
         return expiredVrtCloudlets;
     }
@@ -476,22 +498,6 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
         return finishedCloudlets;
     }
 
-    /**
-     *Checks which Cloudlets in the execution list have an expired virtual
-     * runtime (that have reached the execution time slic) but fits the condition to be re run.
-     * @return The list of preempted Cloudlets, that
-     * must have their virtual runtime (VRT) reset after the next cloudlets are put into
-     * the execution list
-     */
-//    private List<CloudletExecution> cloudletsThatNeedToBeReRun(){
-//        final Predicate<CloudletExecution> reRunCloudletLogic = cle -> cle.getVirtualRuntime() >= cle.getTimeSlice() && getRemainingBurstTime(cle) <= computeCloudletTimeSlice(cle);
-//        final List<CloudletExecution> reRunCloudlets =
-//            getCloudletExecList()
-//                .stream()
-//                .filter(reRunCloudletLogic)
-//                .collect(Collectors.toList());
-//        return reRunCloudlets;
-//    }
 
 //    /**
 //     * Removes finished cloudlets from the
