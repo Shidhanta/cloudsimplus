@@ -38,6 +38,7 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
     private static final long serialVersionUID = 9077807080813489474L;
 
     private int minimumGranularity = 2;
+    public int contextSwitches = 0;
 
     /**
      * A comparator used to increasingly sort Cloudlets into the waiting list
@@ -113,7 +114,20 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
     }
 
 
-    //CHECK THIS FUNCTION
+    /**
+     * Increments when there is a context switch involved
+     */
+
+    private void incrementContextSwitch(){
+        contextSwitches+=1;
+    }
+
+    /**
+     * Returns the total no of context switches that has been carried out
+     */
+    public int getContextSwitches(){
+        return contextSwitches;
+    }
 
     /**
      * Computes the time-slice for a Cloudlet, which is the amount
@@ -228,7 +242,6 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
         cle.setTimeSlice(computeCloudletTimeSlice(cle));
         double ret = super.cloudletSubmitInternal(cle, fileTransferTime);
         System.out.println("[IN]: DRRHA > cloudletSubmitInternal : file transfer time + running time : "+ret);
-        System.out.println("[IN]: DRRHA > cloudletSubmitInternal : The current size of run queue is "+getCloudletWaitingList().size());
         for(CloudletExecution c: getCloudletWaitingList()){
             System.out.println("[IN]: DRRHA > cloudletSubmitInternal : Run queue has "+c.getCloudletId());
         }
@@ -268,11 +281,19 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
             cle.setVirtualRuntime(0);
         }
 
+
+        //Check if program is already in the run queue or does it imply a context switch has to be carried out
+        if(getCloudletExecList().size()==0) incrementContextSwitch();
+
+        if(findCloudletInList(cle.getCloudlet(),getCloudletExecList()).isEmpty()) incrementContextSwitch();
+
+
         final double cloudletTimeSpan = currentTime - cle.getLastProcessingTime();
         final long partialFinishedMI = super.updateCloudletProcessing(cle, currentTime);
 
         cle.addVirtualRuntime(cloudletTimeSpan);
         System.out.println("[IN] : DRRHA > updateCloudletProcessing : partialFinishedMI after cloudlet processing is : "+partialFinishedMI);
+        System.out.println("[IN] : DRRHA > updateCloudletProcessing : Current number of context switches that has been carried out is "+getContextSwitches());
         return partialFinishedMI;
     }
 
@@ -384,6 +405,7 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
         final List<CloudletExecution> rerunCloudlet = cloudletsThatNeedToBeReRun();
 
         final List<CloudletExecution> preemptedCloudlets = preemptExecCloudletsWithExpiredVRuntimeAndMoveToWaitingList();
+
 
 
         final double nextCloudletFinishTime = super.moveNextCloudletsFromWaitingToExecList(currentTime);
@@ -499,44 +521,7 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
     }
 
 
-//    /**
-//     * Removes finished cloudlets from the
-//     * {@link #getCloudletExecList() list of cloudlets to execute}
-//     * and adds them to finished list.
-//     *
-//     * @return the number of finished cloudlets removed from the
-//     * {@link #getCloudletExecList() execution list}
-//     */
-//    private int addCloudletsToFinishedList() {
-//        final List<CloudletExecution> finishedCloudlets
-//            = getCloudletExecList().stream()
-//            .filter(cle -> cle.getCloudlet().isFinished())
-//            .collect(toList());
-//
-//        for (final CloudletExecution c : finishedCloudlets) {
-//
-//        }
-//
-//        return finishedCloudlets.size();
-//    }
-////
-//    private void addCloudletToFinishedList(final CloudletExecution cle) {
-//        setCloudletFinishTimeAndAddToFinishedList(cle);
-//        removeCloudletFromExecList(cle);
-//    }
-//
-//
-//    /**
-//     * Sets the finish time of a cloudlet and adds it to the
-//     * finished list.
-//     *
-//     * @param cle the cloudlet to set the finish time
-//     */
-//    private void setCloudletFinishTimeAndAddToFinishedList(final CloudletExecution cle) {
-//        final double clock = vm.getSimulation().clock();
-//        cloudletFinish(cle);
-//        cle.setFinishTime(clock);
-//    }
+
 
     private int addCloudletsToFinishedList() {
         final List<CloudletExecution> finishedCloudlets
