@@ -54,7 +54,10 @@ public abstract class CloudletSchedulerAbstract implements CloudletScheduler {
     @Serial
     private static final long serialVersionUID = -2314361120790372742L;
 
-    private Vm vm;
+
+    //Changed private to public Vm
+    //private Vm vm;
+    public Vm vm;
     private CloudletTaskScheduler taskScheduler;
 
     /**
@@ -75,7 +78,9 @@ public abstract class CloudletSchedulerAbstract implements CloudletScheduler {
     private final List<CloudletExecution> cloudletFailedList;
 
     /** @see #getCloudletExecList() */
-    private final List<CloudletExecution> cloudletExecList;
+    //Changed cloudletExecList access from private to public
+    //private final List<CloudletExecution> cloudletExecList;
+    public final List<CloudletExecution> cloudletExecList;
 
     /** @see #getCloudletWaitingList() */
     private final List<CloudletExecution> cloudletWaitingList;
