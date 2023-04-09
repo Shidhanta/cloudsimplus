@@ -123,6 +123,13 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
     }
 
     /**
+     * Increments context switch by given ammount
+     */
+    private void incrementContextSwitch(int x){
+        contextSwitches+=x;
+    }
+
+    /**
      * Returns the total no of context switches that has been carried out
      */
     public int getContextSwitches(){
@@ -283,9 +290,9 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
 
 
         //Check if program is already in the run queue or does it imply a context switch has to be carried out
-        if(getCloudletExecList().size()==0) incrementContextSwitch();
+        //if(getCloudletExecList().size()==0) incrementContextSwitch();
 
-        if(findCloudletInList(cle.getCloudlet(),getCloudletExecList()).isEmpty()) incrementContextSwitch();
+        //if(findCloudletInList(cle.getCloudlet(),getCloudletExecList()).isEmpty()) incrementContextSwitch();
 
 
         final double cloudletTimeSpan = currentTime - cle.getLastProcessingTime();
@@ -293,7 +300,6 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
 
         cle.addVirtualRuntime(cloudletTimeSpan);
         System.out.println("[IN] : DRRHA > updateCloudletProcessing : partialFinishedMI after cloudlet processing is : "+partialFinishedMI);
-        System.out.println("[IN] : DRRHA > updateCloudletProcessing : Current number of context switches that has been carried out is "+getContextSwitches());
         return partialFinishedMI;
     }
 
@@ -406,7 +412,10 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
 
         final List<CloudletExecution> preemptedCloudlets = preemptExecCloudletsWithExpiredVRuntimeAndMoveToWaitingList();
 
+        int diff = getCloudletExecList().size()-(rerunCloudlet.size());
+        incrementContextSwitch(diff);
 
+        System.out.println("[IN] : DRRHA > moveNextCloudletsFromWaitingToExecList : context switches till now " + getContextSwitches());
 
         final double nextCloudletFinishTime = super.moveNextCloudletsFromWaitingToExecList(currentTime);
 
@@ -421,15 +430,7 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
             c.setTimeSlice(computeCloudletTimeSlice(c));
         }
 
-        /*After preempted Cloudlets are moved to the waiting list
-        and next Cloudlets on the beginning of this list are moved
-        to the execution list, the virtual runtime of these  Cloudlets
-        is reset so that they can compete with other waiting Cloudlets to use
-        the processor again.*/
-//        for(final CloudletExecution c: reRunCloudlets){
-//            c.setVirtualRuntime(computeCloudletInitialVirtualRuntime(c));
-//            c.setTimeSlice(computeCloudletTimeSlice(c));
-//        }
+
 
         for(CloudletExecution c: getCloudletWaitingList()){
             System.out.println("[IN] : DRRHA > moveNextCloudletsFromWaitingToExecList : Cloudlet in waiting list : "+c.getCloudletId());
