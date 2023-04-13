@@ -100,6 +100,7 @@ public final class CloudletSchedulerDRRHA extends CloudletSchedulerTimeShared{
     private double getRemainingBurstTime(CloudletExecution c){
         double burstTime = 0.0;
         burstTime+= (c.getRemainingCloudletLength()/getAvailableMipsByPe())*(c.getPesNumber());
+        //burstTime = (c.getRemainingLifeTime()/c.getLastAllocatedMips())*c.getPesNumber();
         return burstTime;
     }
 

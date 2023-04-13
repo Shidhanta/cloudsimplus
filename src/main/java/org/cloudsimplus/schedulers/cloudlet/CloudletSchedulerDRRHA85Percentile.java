@@ -31,7 +31,7 @@ import static java.util.stream.Collectors.toList;
  */
 //TO DO
 
-public final class CloudletSchedulerDRRHAModification extends CloudletSchedulerTimeShared{
+public final class CloudletSchedulerDRRHA85Percentile extends CloudletSchedulerTimeShared{
 
 
     @Serial
@@ -69,22 +69,22 @@ public final class CloudletSchedulerDRRHAModification extends CloudletSchedulerT
     /**
      * Returns the median of the cloudlet waiting list , if the list is empty we just return MAX VALUE
      */
-      public double getMedian(){
-          int n = getCloudletWaitingList().size();
-          //if list is empty median cannot be defined
-          if(n == 0) return Double.MAX_VALUE;
-          //sort the array
-          sortCloudletWaitingList(this::waitingCloudletsComparator);
-          double median = 0.0;
-          if(n==1) return getRemainingBurstTime(getCloudletWaitingList().get(0));
-          if(n%2==0){
-              median = getRemainingBurstTime(getCloudletWaitingList().get(n/2));
-          }
-          else{
+    public double getMedian(){
+        int n = getCloudletWaitingList().size();
+        //if list is empty median cannot be defined
+        if(n == 0) return Double.MAX_VALUE;
+        //sort the array
+        sortCloudletWaitingList(this::waitingCloudletsComparator);
+        double median = 0.0;
+        if(n==1) return getRemainingBurstTime(getCloudletWaitingList().get(0));
+        if(n%2==0){
+            median = getRemainingBurstTime(getCloudletWaitingList().get(n/2));
+        }
+        else{
             median = (getRemainingBurstTime(getCloudletWaitingList().get((n-1)/2))+ getRemainingBurstTime(getCloudletWaitingList().get(n/2)))/2;
-          }
-          return median;
-      }
+        }
+        return median;
+    }
 
     /**
      * Function to calculate the standard deviation of the cloudlet waiting list
@@ -212,7 +212,7 @@ public final class CloudletSchedulerDRRHAModification extends CloudletSchedulerT
 
         if((p>=-0.4 && p<=0.4) || median == Double.MAX_VALUE) timeSlice = computeCloudletTimeSlice(cloudlet,mean);
         else if(p>0.4) timeSlice = computeCloudletTimeSlice(cloudlet,mean);
-        else timeSlice = computeCloudletTimeSlice(cloudlet,median);
+        else timeSlice = computeCloudletTimeSlice2(cloudlet,median);
 
         return timeSlice;
     }
@@ -232,9 +232,28 @@ public final class CloudletSchedulerDRRHAModification extends CloudletSchedulerT
      */
     private double computeCloudletTimeSlice(final CloudletExecution cloudlet, double m){
         double timeSlice = 0.0;
-            timeSlice = m/2 + (m/2)/getRemainingBurstTime(cloudlet);
+        timeSlice = m/2 + (m/2)/getRemainingBurstTime(cloudlet);
         return timeSlice;
     }
+
+    /**
+     * Computes the time-slice for a Cloudlet, which is the amount
+     * of time (in seconds) that it will have to use the PEs,
+     * considering all Cloudlets in the {@link #getCloudletWaitingList()} waiting list}.
+     *
+     * The timeslice is computed considering the modified DRRHA Algorithm i .e.
+     * time slice = (0.85)*median/2 + ((0.85)*median/2)/remaining_burst_time
+     *
+     * @param cloudlet Cloudlet to get the time-slice
+     * @return Cloudlet time-slice (in seconds)
+     *
+     */
+    private double computeCloudletTimeSlice2(final CloudletExecution cloudlet, double m){
+        double timeSlice = 0.0;
+        timeSlice = (0.85*m);
+        return timeSlice;
+    }
+
 
     /**
      * Gets a <b>read-only</b> list of Cloudlets which are waiting to run, the so called

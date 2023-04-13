@@ -560,6 +560,7 @@ public abstract class CloudletSchedulerAbstract implements CloudletScheduler {
      */
     protected long updateCloudletProcessing(final CloudletExecution cle, final double currentTime) {
         final double partialFinishedInstructions = cloudletExecutedInstructionsForTimeSpan(cle, currentTime);
+        System.out.println("[IN] : CLOUDLETSCHEDULERABSTRACT : partialfinishedInstructions "+ partialFinishedInstructions);
         cle.updateProcessing(partialFinishedInstructions);
         updateVmResourceAbsoluteUtilization(cle, ((VmSimple)vm).getRam());
         updateVmResourceAbsoluteUtilization(cle, ((VmSimple)vm).getBw());
@@ -679,9 +680,11 @@ public abstract class CloudletSchedulerAbstract implements CloudletScheduler {
          * to be transferred from the Datacenter storage.
          */
         final double processingTimeSpan = hasCloudletFileTransferTimePassed(cle, currentTime) ? timeSpan(cle, currentTime) : 0;
-
+        System.out.println("[IN] : CSCHEDULERABSTRACT > cloudletExecutedInstructionsForTimeSpan : processingTimeSpan "+ processingTimeSpan);
         final double vMemDelay = getVirtualMemoryDelay(cle, processingTimeSpan);
+        System.out.println("[IN] : CSCHEDULERABSTRACT > cloudletExecutedInstructionsForTimeSpan : vMemDelay "+ vMemDelay);
         final double reducedBwDelay = getBandwidthOverSubscriptionDelay(cle, processingTimeSpan);
+        System.out.println("[IN] : CSCHEDULERABSTRACT > cloudletExecutedInstructionsForTimeSpan : reducedBwDelay "+ reducedBwDelay);
         /*If delay is negative, resource was not allocated.
         If RAM and BW could not be allocated, just returns 0 to indicate no processing was performed
         due to lack of other resources.*/
@@ -690,7 +693,9 @@ public abstract class CloudletSchedulerAbstract implements CloudletScheduler {
         }
 
         final double cloudletUsedMips = getAllocatedMipsForCloudlet(cle, currentTime, true);
+        System.out.println("[IN] : CSCHEDULERABSTRACT > cloudletExecutedInstructionsForTimeSpan : cloudletUsedMips "+ cloudletUsedMips);
         final double actualProcessingTime = processingTimeSpan - (validateDelay(vMemDelay) + validateDelay(reducedBwDelay));
+        System.out.println("[IN] : CSCHEDULERABSTRACT > cloudletExecutedInstructionsForTimeSpan : actualProcessingTime "+ actualProcessingTime);
         return cloudletUsedMips * actualProcessingTime * Conversion.MILLION;
     }
 
@@ -862,9 +867,12 @@ public abstract class CloudletSchedulerAbstract implements CloudletScheduler {
      * otherwise
      */
     private boolean hasCloudletFileTransferTimePassed(final CloudletExecution cle, final double currentTime) {
-        return cle.getFileTransferTime() == 0 ||
+        System.out.println("[IN] : CloudletSchedulerAbstract : cle.getFileTransferTime() "+(boolean)(cle.getFileTransferTime()==0.0));
+        boolean b = cle.getFileTransferTime() == 0.0 ||
                currentTime - cle.getCloudletArrivalTime() > cle.getFileTransferTime() ||
                cle.getCloudlet().getFinishedLengthSoFar() > 0;
+
+        return b;
     }
 
     /**
@@ -876,6 +884,7 @@ public abstract class CloudletSchedulerAbstract implements CloudletScheduler {
      * @return
      */
     protected double timeSpan(final CloudletExecution cle, final double currentTime) {
+        System.out.println("[IN] CloudletSchedulerAbstract > timeSpan : timeSpan "+(double)(currentTime-cle.getLastProcessingTime()));
         return currentTime - cle.getLastProcessingTime();
     }
 
